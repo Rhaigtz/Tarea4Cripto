@@ -7,6 +7,8 @@ import sqlite3
 hashes = [{"name": 'md5', "code": '0'}, {"name": 'md5_static_salt', "code": '10'}, {
     "name": 'md5_dynamic_salt', 'code': '10'}, {"name": 'ml', "code": '1000'}, {'name': 'sha512_crypt', 'code': '1800'}]
 
+# Genera las llaves privadas y publicas
+
 key = RSA.generate(2048)
 
 private_key = key.export_key()
@@ -26,12 +28,14 @@ file_out = open("receiver.pem", "wb")
 file_out.write(exported_key)
 file_out.close()
 
+# Inicializa el socket
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((socket.gethostname(), 3000))
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 s.listen(1)
 clientsocket, address = s.accept()
 
+# Recibe el nombre del archivo en cual se trabajara
 file_hash = clientsocket.recv(300).decode('utf-8')
 while True:
     try:
@@ -40,12 +44,17 @@ while True:
         if received_message == 'exit':
             break
         elif received_message == 'key':
+            # Envia la llave publica
             clientsocket.sendall(bytes('receiver.pem', 'utf-8'))
+
+            # Espera archivo encriptado
             hashed_file_route = clientsocket.recv(300).decode('utf-8')
 
             hashed_file = open(hashed_file_route, 'r')
 
             unhashed_file = open('unhashed/{}_unhashed'.format(file_hash), 'w')
+
+            # Comienza a des-encriptar archivo y genera uno nuevo
             key = RSA.importKey(open('private.pem').read())
             cipher = PKCS1_OAEP.new(key)
             for hash_line in hashed_file:
@@ -55,6 +64,8 @@ while True:
             unhashed_file.close()
 
             unhashed_file = open('unhashed/{}_unhashed'.format(file_hash), 'r')
+
+            # Genera SQLite (Si ya existen los elementos, eliminarlos ya que dara error sino)
 
             connection = sqlite3.connect('sqlite/{}.sqlite'.format(file_hash))
             cur = connection.cursor()

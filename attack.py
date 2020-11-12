@@ -63,6 +63,7 @@ s.connect((socket.gethostname(), 3000))
 
 
 while True:
+    # Envia nombre del archivo
     s.sendall(bytes(hash_type['name'], 'utf-8'))
     full_msg = input('Ingrese su mensaje hacia el server\n')
     s.sendall(bytes(full_msg, 'utf-8'))
@@ -71,25 +72,27 @@ while True:
         break
 
     elif full_msg == 'key':
-        # hashedFile = open('md5_hashed.txt', 'r')
+        # Espera llave publica
         received_message = s.recv(1024)
+
         new_file = open(
             "rehashed/{}_rehashed.txt".format(hash_type['name']), "w")
+
         file_with_hashes = open(
             'hashed/{}_hashed.txt'.format(hash_type['name']), 'r')
+        # importa la llave recibida al formato necesario
         key = RSA.importKey(open(received_message.decode('utf-8')).read())
 
         cipher = PKCS1_OAEP.new(key)
+
+        # Genera el encriptado y lo almacena en nuevo archivo
         for hash in file_with_hashes:
             message = bytes(hash, 'utf-8')
             ciphertext = cipher.encrypt(message)
             new_file.write(ciphertext.hex().upper()+'\n')
         file_with_hashes.close()
         new_file.close()
+        # Envia el archivo encriptado
         s.sendall(
             bytes('rehashed/{}_rehashed.txt'.format(hash_type['name']), 'utf-8'))
-
-    else:
-        received_message = s.recv(1024)
-        print(received_message.decode('utf-8'))
 s.close()
