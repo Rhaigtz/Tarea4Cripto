@@ -2,6 +2,7 @@ import socket
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 import codecs
+import sqlite3
 
 hashes = [{"name": 'md5', "code": '0'}, {"name": 'md5_static_salt', "code": '10'}, {
     "name": 'md5_dynamic_salt', 'code': '10'}, {"name": 'ml', "code": '1000'}, {'name': 'sha512_crypt', 'code': '1800'}]
@@ -39,19 +40,33 @@ while True:
         if received_message == 'exit':
             break
         elif received_message == 'key':
-            print('entre a key')
             clientsocket.sendall(bytes('receiver.pem', 'utf-8'))
             hashed_file_route = clientsocket.recv(300).decode('utf-8')
 
             hashed_file = open(hashed_file_route, 'r')
 
-            unhashed_file = open('{}_unhashed'.format(file_hash), 'w')
+            unhashed_file = open('unhashed/{}_unhashed'.format(file_hash), 'w')
             key = RSA.importKey(open('private.pem').read())
             cipher = PKCS1_OAEP.new(key)
             for hash_line in hashed_file:
                 message = cipher.decrypt(bytes.fromhex(hash_line))
                 unhashed_file.write(message.decode('utf-8'))
+
             unhashed_file.close()
+
+            unhashed_file = open('unhashed/{}_unhashed'.format(file_hash), 'r')
+
+            connection = sqlite3.connect('sqlite/{}.sqlite'.format(file_hash))
+            cur = connection.cursor()
+            cur.execute('CREATE TABLE HASH (bcrypt_hash VARCHAR)')
+
+            for hashs in unhashed_file:
+                cur.execute(
+                    'INSERT INTO HASH (bcrypt_hash) VALUES (?)', ([hashs]))
+                connection.commit()
+            unhashed_file.close()
+            connection.close()
+
             hashed_file.close()
 
     except KeyboardInterrupt:

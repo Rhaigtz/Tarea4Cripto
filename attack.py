@@ -36,27 +36,16 @@ while((bool(hash_type != 1) ^ bool(hash_type != 2) ^ bool(hash_type != 3) ^ bool
 hash_type = hashes[hash_type - 1]
 
 
-os.system('cd hashcat & hashcat.exe -m {} -a 0 Hashes\{}.txt diccionarios\diccionario_2.txt --force --outfile=../{}_text.txt --outfile-format 2'.format(
+os.system('cd hashcat & hashcat.exe -m {} -a 0 Hashes\{}.txt diccionarios\diccionario_2.txt --force --outfile=../output/{}_text.txt --outfile-format 2'.format(
     hash_type["code"], hash_type["name"], hash_type['name']))
-# if(hash_type == 1):
-#     os.system('cd hashcat & hashcat.exe -m 0 -a 0 Hashes\md5.txt diccionarios\diccionario_2.txt --force --outfile=../md5_text.txt --outfile-format 2')
-# elif(hash_type == 2):
-#     os.system('cd hashcat & hashcat.exe -m 10 -a 0 Hashes\md5_static_salt.txt diccionarios\diccionario_2.txt --force --outfile=../md5_static_text.txt --outfile-format 2')
-# elif(hash_type == 3):
-#     os.system('cd hashcat & hashcat.exe -m 10 -a 0 Hashes\md5_dynamic_salt.txt diccionarios\diccionario_2.txt --force --outfile=../md5_dynamic_text.txt --outfile-format 2')
-# elif(hash_type == 4):
-#     os.system('cd hashcat & hashcat.exe -m 1000 -a 0 Hashes\ml.txt diccionarios\diccionario_2.txt --force --outfile=../ml_text.txt --outfile-format 2')
-# elif(hash_type == 5):
-#     os.system('cd hashcat & hashcat.exe -m 1800 -a 0 Hashes\sha-512-crypt.txt diccionarios\diccionario_2.txt --force --outfile=../sha-512_text.txt --outfile-format 2')
 
-
-fileHash = open("{}_text.txt".format(hash_type['name']), "r")
+fileHash = open("output/{}_text.txt".format(hash_type['name']), "r")
 
 
 hash_files = input('Desea hashear los archivos con bcrypt? Y/N\n')
 
 if hash_files == 'Y':
-    file_object = open("{}_hashed.txt".format(hash_type['name']), "w")
+    file_object = open("hashed/{}_hashed.txt".format(hash_type['name']), "w")
     start_time = time.time()
     for hash in fileHash:
         pwd = bytes(hash, 'utf-8')
@@ -84,8 +73,10 @@ while True:
     elif full_msg == 'key':
         # hashedFile = open('md5_hashed.txt', 'r')
         received_message = s.recv(1024)
-        new_file = open("{}_rehashed.txt".format(hash_type['name']), "w")
-        file_with_hashes = open('{}_hashed.txt'.format(hash_type['name']), 'r')
+        new_file = open(
+            "rehashed/{}_rehashed.txt".format(hash_type['name']), "w")
+        file_with_hashes = open(
+            'hashed/{}_hashed.txt'.format(hash_type['name']), 'r')
         key = RSA.importKey(open(received_message.decode('utf-8')).read())
 
         cipher = PKCS1_OAEP.new(key)
@@ -95,7 +86,8 @@ while True:
             new_file.write(ciphertext.hex().upper()+'\n')
         file_with_hashes.close()
         new_file.close()
-        s.sendall(bytes('{}_rehashed.txt'.format(hash_type['name']), 'utf-8'))
+        s.sendall(
+            bytes('rehashed/{}_rehashed.txt'.format(hash_type['name']), 'utf-8'))
 
     else:
         received_message = s.recv(1024)
